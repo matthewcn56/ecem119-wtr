@@ -17,11 +17,6 @@ export default function BottleInfoCards(
 ) {
     const { userWaterBottles } = props;
 
-    // If user has no associated water bottles, show onboarding
-    if (!userWaterBottles || userWaterBottles.length == 0) {
-        return <p>No water bottles!</p>;
-    }
-
     const [loading, setLoading] = React.useState<boolean>(true);
     const [userBottles, setUserBottles] = React.useState<MenuItemType[]>([]);
     const [currentBottle, setCurrentBottle] = React.useState<string | null>(null);
@@ -113,6 +108,11 @@ export default function BottleInfoCards(
             newUserBottles[wbToUpdate].label = newName;
             setUserBottles(newUserBottles);
         }
+    }
+
+    // If user has no associated water bottles, show onboarding
+    if (!userWaterBottles || userWaterBottles.length == 0) {
+        return <p>No water bottles!</p>;
     }
     
     return (<>
