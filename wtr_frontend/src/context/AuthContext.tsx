@@ -4,7 +4,7 @@ import React from 'react';
 import { getAuth, onIdTokenChanged, User as FirebaseUser} from 'firebase/auth';
 
 import firebaseApp from '@/firebase/config';
-import { addUser, getUser } from '@/firebase/db/users';
+import { addUser, attachUserHandler, getUser } from '@/firebase/db/users';
 import IUser from '@/types/IUser';
 
 const auth = getAuth(firebaseApp);
@@ -36,6 +36,9 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
                     });
                 } finally {
                     setLoading(false);
+
+                    // Attach handler to user
+                    attachUserHandler(user.uid, (dbUser) => setUser(dbUser));
                 }
             }
           });

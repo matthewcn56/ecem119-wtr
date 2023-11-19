@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
+import { StyledEngineProvider } from '@mui/material/styles';
 import './globals.css'
 
 import { AuthContextProvider } from '@/context/AuthContext'
@@ -21,13 +22,15 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <AuthContextProvider>
-          <AuthenticatedWrapper>
-            <MainLayout>
-              { children }
-            </MainLayout>
-          </AuthenticatedWrapper>
-        </AuthContextProvider>
+        <StyledEngineProvider injectFirst>
+          <AuthContextProvider>
+            <AuthenticatedWrapper>
+              <MainLayout>
+                { children }
+              </MainLayout>
+            </AuthenticatedWrapper>
+          </AuthContextProvider>
+        </StyledEngineProvider>
       </body>
     </html>
   )
