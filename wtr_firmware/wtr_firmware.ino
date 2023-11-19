@@ -22,12 +22,16 @@ long duration;
 float distanceCm;
 float distanceInch;
 float lastSent = 0;
+float lastSentPercentage =0;
 float lastFiveReadingsCM[5] ={-1,-1,-1,-1,-1};
 int SEND_INTERVAL = 1000;
 int READ_INTERVAL = 250;
 unsigned long lastReadTime = 0;
 float CM_DIFF_THRESHOLD = 1;
 bool taskCompleted = false;
+
+float MAX_VOLUME = 1000;
+float MAX_CM = 20.0;
 
 int PAST_READINGS_SIZE = 5;
 
@@ -69,6 +73,10 @@ float calcAvgReading(){
   for(int i=0;i<PAST_READINGS_SIZE;i++)
     runningTotal+= lastFiveReadingsCM[i];
   return runningTotal/PAST_READINGS_SIZE;
+}
+
+float cmToPercentage(float cm){
+  return (cm/MAX_CM);
 }
 
 
@@ -177,7 +185,7 @@ void readDistance(){
 
 void loop() {
   //read if READ_INTERVAL millis have passed
-  if (millis() - lastReadTime > READ_INTERVAL){
+  if (millis() - lastReadTime > READ_INTERVAL){ 
     readDistance();
     lastReadTime = millis();
   }
@@ -207,11 +215,12 @@ void loop() {
     }
 
     float valToSend = calcAvgReading();
+    float valToSendPerc = cmToPercentage(valToSend);
 
-    Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSend);
+    Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
     lastSent = valToSend;
     Serial.print("Updating with val of: ");
-    Serial.println(valToSend);
+    Serial.println(valToSendPerc);
 
     taskCompleted = false;
   }
