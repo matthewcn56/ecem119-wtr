@@ -9,11 +9,12 @@ export default function RenameBottleModal(
     props: { 
         open: boolean,
         currentBottle: string,
+        originalName: string,
         onRename: (arg0: string) => void,
         closeModal: () => void
     }
 ) {
-    const { open, currentBottle, closeModal, onRename } = props;
+    const { open, currentBottle, originalName, closeModal, onRename } = props;
 
     const [newBottleName, setNewBottleName] = React.useState<string>("");
 
@@ -25,7 +26,7 @@ export default function RenameBottleModal(
 
     return (
         <Modal title="Rename" open={open} onOk={_handleBottleRename} onCancel={() => closeModal()}>
-            <Input onChange={(e) => setNewBottleName(e.target.value)} />
+            <Input defaultValue={originalName} onChange={(e) => setNewBottleName(e.target.value)} />
         </Modal>
     )
 }

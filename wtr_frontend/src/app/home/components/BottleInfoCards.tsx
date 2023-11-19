@@ -119,6 +119,7 @@ export default function BottleInfoCards(
         <RenameBottleModal 
             open={openModal == 'rename'} 
             currentBottle={currentBottle!} 
+            originalName={bottleData?.name || ""}
             closeModal={() => setOpenModal(null)} 
             onRename={_onBottleRename} 
         />
