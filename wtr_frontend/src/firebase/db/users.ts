@@ -17,7 +17,7 @@ export async function getUser(uid: string) {
     });
 }
 
-export function addUser(user: IUser) {
+export function addUser(user: Partial<IUser>) {
     set(
         ref(db, `users/${user.uid}`),
         user

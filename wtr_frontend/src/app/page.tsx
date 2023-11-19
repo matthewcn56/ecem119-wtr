@@ -1,114 +1,170 @@
 "use client"
 
-import Image from 'next/image'
-import { Button } from 'antd';
+import React from 'react';
+import { Avatar, Badge, Card, Divider, Flex, Space, Statistic, Typography } from 'antd';
+import { ArrowUpOutlined, CalendarOutlined } from '@ant-design/icons';
+import { Liquid } from '@ant-design/plots';
 
 import { useAuthContext } from '@/context/AuthContext';
-import signOut from '@/firebase/auth/signOut';
+import { attachBottleHandler } from '@/firebase/db/bottles';
+import IBottleData from '@/types/IBottleData';
 
 export default function Home() {
-  const { user } = useAuthContext();
+    const { user } = useAuthContext();
 
-  return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">src/app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <div
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            rel="noopener noreferrer"
-          >
-            Signed in as {user?.email} 
-            <br/> 
-            ({user?.uid})
-            <Button style={{ color: 'white' }} onClick={signOut}>Sign out</Button>
-          </div>
-        </div>
-      </div>
+    const [loading, setLoading] = React.useState<boolean>(true);
+    const [currentBottle, setCurrentBottle] = React.useState<string | undefined>(undefined)
+    const [bottleData, setBottleData] = React.useState<IBottleData | null>(null);
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+    // Make sure user exists and select first water bottle in list
+    React.useEffect(() => {
+        setLoading(true);
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+        if (!user)
+            return;
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+        // Get user's water bottle
+        if (!user.waterBottles || user.waterBottles.length == 0) {
+            setLoading(false);
+            setBottleData(null);
+        }
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+        setCurrentBottle(user.waterBottles[0]);
+    }, [user]);
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
-  )
+    // Load data for current water bottle
+    React.useEffect(() => {
+        setLoading(true);
+
+        if (!currentBottle)
+            return;
+
+        attachBottleHandler(
+            currentBottle,
+            (newBottleData) => {
+                setLoading(false);
+                setBottleData(newBottleData);
+            }
+        );
+    }, [currentBottle]);
+
+    return (
+        <Flex style={{ width: '100%', height: '100%', padding: '25px' }} justify="center" align="center" gap="middle" vertical>
+            <Card 
+                style={{ width: 400, height: 400, boxSizing: 'border-box' }} 
+                bodyStyle={{ width: '100%', height: '100%', padding: '10%' }}
+                loading={loading}
+            >   
+                { bottleData &&
+                    <Space direction='vertical' style={{ display: 'flex', flex: 'space-around' }}>
+                        <Card.Meta
+                            title={bottleData!.name}
+                        />
+                        <Liquid 
+                            percent={bottleData!.currentWaterVolume}
+                            height={300}
+                            statistic={{
+                                content: {
+                                    customHtml: (c, v, data) => {
+                                        const percent = (data as any).percent as number;
+
+                                        return (`
+                                            <div>
+                                                <p>${Math.round(percent * 100)}%</p>
+                                                <p style="font-size: 20px; color: #383838;">${Math.round(percent * bottleData!.maxVolume)} mL</p>
+                                            </div>
+                                        `);
+                                    }
+                                }
+                            }}
+                        />
+                    </Space>
+                }
+            </Card>
+            <Card 
+                style={{ width: 400, height: 150, boxSizing: 'border-box' }} 
+                bodyStyle={{ width: '100%', height: '100%', padding: '10%' }}
+                loading={loading}
+            >
+                <Flex style={{ width: '100%', height: '100%' }} justify="flex-start" align="center" gap="middle">
+                    { bottleData && _getLastSipCard(bottleData!.lastDrankTime) }
+                </Flex>
+            </Card>
+            <Card 
+                style={{ width: 400, height: 150, boxSizing: 'border-box' }} 
+                bodyStyle={{ width: '100%', height: '100%', padding: '10%' }}
+                loading={loading}
+            >
+                <Flex style={{ width: '100%', height: '100%' }} justify="space-between" align="center" gap="middle">
+                    <Statistic
+                        title="Water Consumption"
+                        value={11.28}
+                        precision={2}
+                        valueStyle={{ color: '#3f8600' }}
+                        prefix={<ArrowUpOutlined />}
+                        suffix="%"
+                    />
+                    <Divider type="vertical" style={{ height: '60px' }} />
+                    <div style={{ textAlign: 'center' }}>
+                        <Typography.Title level={3}>
+                            + 268 mL
+                        </Typography.Title>
+                        <Typography>
+                            compared to <br/> last week
+                        </Typography>
+                    </div>
+                </Flex>
+            </Card>
+        </Flex>
+    );
+}
+
+function _getLastSipCard(lastSipTime: number): JSX.Element {
+    const lastSip = new Date(lastSipTime).getTime();
+    const now = new Date().getTime();
+    const timeDifference = (now - lastSip) / 1000 / 60; // Time since last sip in minutes
+
+    // Get time string and badge color
+    let timeString = "";
+    let badgeColor = "red";
+
+    // Less than a minute
+    if (timeDifference < 1) {
+        timeString = "<1 minute ago";
+        badgeColor = "green"
+    }
+    // Less than an hour
+    else if (timeDifference < 60) {
+        const minuteDifference = Math.round(timeDifference);
+        timeString = minuteDifference == 1 ? "1 minute ago" : `${minuteDifference} minutes ago`;
+        badgeColor = "yellow"
+    }
+    // Less than a day
+    else if (timeDifference < 60 * 24) {
+        const hourDifference = Math.round(timeDifference / 60);
+        timeString = hourDifference == 1 ? "1 minute ago" : `${hourDifference} hours ago`;
+    }
+    // Less than a week
+    else if (timeDifference < 60 * 24 * 7) {
+        const dayDifference = Math.round(timeDifference / 60 / 24);
+        timeString = dayDifference == 1 ? "1 minute ago" : `${dayDifference} days ago`;
+    }
+    // More than that
+    else {
+        timeString = `on ${new Date(lastSipTime).toLocaleDateString('en-ZA')}`
+    }
+
+    return (<>
+        <Badge dot={true} style={{ backgroundColor: badgeColor, width: '15px', height: '15px' }}>
+            <Avatar
+                size={70}
+                shape="square"
+                icon={<CalendarOutlined />}
+            />
+        </Badge>
+        <Flex style={{ width: '100%', height: '100%', paddingLeft: '10px' }} gap="middle" vertical>
+            <Typography>You last took a sip</Typography>
+            <Typography.Title level={3} style={{ marginTop: 0 }}>{timeString}</Typography.Title>
+        </Flex>
+    </>);
 }

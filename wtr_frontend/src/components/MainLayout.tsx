@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Layout } from 'antd';
 import { HomeOutlined, UsergroupDeleteOutlined } from '@ant-design/icons';
 import { BottomNavigation, BottomNavigationAction } from '@mui/material';
@@ -10,7 +11,22 @@ import styles from '@/styles/MainLayout.module.css';
 import UserAvatarDropdown from './UserAvatarDropdown';
 
 export default function MainLayout({ children }: { children: React.ReactNode }): JSX.Element {
+    const router = useRouter();
+
     const [currentPage, setCurrentPage] = React.useState<number>(0);
+
+    function _handlePageChange(event: React.SyntheticEvent, newPage: number) {
+        setCurrentPage(newPage);
+
+        switch (newPage) {
+            case 0:
+                router.push('/');
+                break;
+            case 1:
+                router.push('/family');
+                break;
+        }
+    }
 
     return (
         <Layout style={{ minHeight: '100vh' }}>
@@ -31,7 +47,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }):
                     <BottomNavigation
                         showLabels
                         value={currentPage}
-                        onChange={(_, newValue) => setCurrentPage(newValue)}
+                        onChange={_handlePageChange}
                     >
                         <BottomNavigationAction label="Home" icon={<HomeOutlined />} />
                         <BottomNavigationAction label="Family" icon={<UsergroupDeleteOutlined />} />
