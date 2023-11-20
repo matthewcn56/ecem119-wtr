@@ -61,7 +61,10 @@ export default function BottleInfoCards(
     // When all water bottles loaded, set the current bottle to be the first one in the list
     React.useEffect(() => {
         if (userBottles && userBottles[0] && userBottles[0].key)
-            setCurrentBottle(userBottles[0].key as string);
+            if (currentBottle)
+                return;
+            else
+                setCurrentBottle(userBottles[0].key as string);
         else
             setCurrentBottle(null);
     }, [userBottles]);
