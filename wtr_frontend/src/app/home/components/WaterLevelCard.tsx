@@ -37,8 +37,8 @@ export default function WaterLevelCard(
 
     return (
         <Card
-            style={{ width: 400, height: 400, boxSizing: 'border-box' }}
-            bodyStyle={{ width: '100%', height: '100%', padding: '10%', boxSizing: 'border-box' }}
+            style={{ width: 350, height: 350, boxSizing: 'border-box' }}
+            bodyStyle={{ width: '100%', height: `${350-56}px`, padding: '5%', boxSizing: 'border-box' }}
             loading={loading}
             title={
                 <Dropdown 

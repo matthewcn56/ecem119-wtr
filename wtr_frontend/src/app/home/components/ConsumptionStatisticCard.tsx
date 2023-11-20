@@ -6,8 +6,8 @@ export default function ConsumptionStatisticCard(props: { loading: boolean }) {
 
     return (
         <Card 
-            style={{ width: 400, height: 150, boxSizing: 'border-box' }} 
-            bodyStyle={{ width: '100%', height: '100%', padding: '10%' }}
+            style={{ width: 350, height: 150, boxSizing: 'border-box' }} 
+            bodyStyle={{ width: '100%', height: '100%', padding: '5%' }}
             loading={loading}
         >
             <Flex style={{ width: '100%', height: '100%' }} justify="space-between" align="center" gap="middle">
