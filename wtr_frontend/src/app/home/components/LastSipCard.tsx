@@ -57,7 +57,7 @@ export default function LastSipCard(props: { lastSipTime?: number, loading: bool
                         icon={<CalendarOutlined />}
                     />
                 </Badge>
-                <Flex style={{ width: '100%', height: '100%', paddingLeft: '10px' }} gap="middle" vertical>
+                <Flex style={{ width: '100%', height: '100%', paddingLeft: '10px' }} gap="small" justify="center" vertical>
                     <Typography>You last took a sip</Typography>
                     <Typography.Title level={3} style={{ marginTop: 0 }}>{timeString}</Typography.Title>
                 </Flex>
