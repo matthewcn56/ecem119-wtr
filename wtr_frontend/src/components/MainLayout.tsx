@@ -5,10 +5,10 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Layout } from 'antd';
 import { HomeOutlined, UsergroupDeleteOutlined } from '@ant-design/icons';
-import { BottomNavigation, BottomNavigationAction } from '@mui/material';
 
-import styles from '@/styles/MainLayout.module.css';
+import BottomNavigation, { BottomNavigationItem } from './BottomNavigation';
 import UserAvatarDropdown from './UserAvatarDropdown';
+import styles from '@/styles/MainLayout.module.css';
 
 export default function MainLayout({ children }: { children: React.ReactNode }): JSX.Element {
     const router = useRouter();
@@ -43,16 +43,10 @@ export default function MainLayout({ children }: { children: React.ReactNode }):
                 { children }
             </Layout.Content>
             <Layout.Footer className={styles.footer}>
-                <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0 }}>
-                    <BottomNavigation
-                        showLabels
-                        value={currentPage}
-                        onChange={_handlePageChange}
-                    >
-                        <BottomNavigationAction label="Home" icon={<HomeOutlined />} />
-                        <BottomNavigationAction label="Family" icon={<UsergroupDeleteOutlined />} />
-                    </BottomNavigation>
-                </div>
+                <BottomNavigation>
+                    <BottomNavigationItem label="Home" icon={<HomeOutlined />} />
+                    <BottomNavigationItem label="Family" icon={<UsergroupDeleteOutlined />} />
+                </BottomNavigation>
             </Layout.Footer>
         </Layout>
     );
