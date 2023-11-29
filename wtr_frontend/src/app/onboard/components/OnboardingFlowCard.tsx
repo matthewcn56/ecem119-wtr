@@ -13,7 +13,7 @@ export default function OnboardingCard() {
 
     const steps = [
         {
-            title: 'Initialize',
+            title: 'Init',
             content: <InitializeStep nextStep={() => setCurrentStep(1)} />,
         },
         {
@@ -39,6 +39,7 @@ export default function OnboardingCard() {
                     current={currentStep} 
                     items={steps.map((s) => ({ key: s.title, title: s.title, icon: s.icon }))} 
                     labelPlacement='vertical' 
+                    responsive={false}
                 />
                 <div style={{ height: '10px' }} />
                 {steps[currentStep].content}
