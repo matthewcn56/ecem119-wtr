@@ -1,6 +1,9 @@
 "use client"
 
 import React from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "antd";
+import { PlusOutlined } from "@ant-design/icons";
 import type { MenuItemType } from "antd/es/menu/hooks/useItems";
 
 import LastSipCard from './LastSipCard';
@@ -9,6 +12,7 @@ import { attachBottleHandler, getWaterBottleName, removeBottleHandler } from "@/
 import RenameBottleModal from './RenameBottleModal';
 import WaterLevelCard from "./WaterLevelCard";
 import IBottleData from "@/types/IBottleData";
+import OnboardingCard from "./OnboardingCard";
 
 export default function BottleInfoCards(
     props: { 
@@ -16,6 +20,7 @@ export default function BottleInfoCards(
     }
 ) {
     const { userWaterBottles } = props;
+    const router = useRouter();
 
     const [loading, setLoading] = React.useState<boolean>(true);
     const [userBottles, setUserBottles] = React.useState<MenuItemType[]>([]);
@@ -29,7 +34,7 @@ export default function BottleInfoCards(
     // Get all water bottles associated to current user
     React.useEffect(() => {
         async function _getWaterBottleNames() {
-            const availableWaterBottles = 
+            const availableWaterBottles: MenuItemType[] = 
                 // Get names
                 (await Promise.all(
                     userWaterBottles!.map(async (wb) => {
@@ -51,11 +56,24 @@ export default function BottleInfoCards(
                     (wbObj) => wbObj.key !== 'XXX_REMOVE'
                 );
 
+            // Add the "Add new water bottle" button
+            availableWaterBottles.push({
+                key: 'new_water_bottle',
+                label: <Button icon={<PlusOutlined />} onClick={() => router.push('/onboard')}>Add a new wtr bottle</Button>,
+            })
+
             // Set state
             setUserBottles(availableWaterBottles);
         }
 
-        _getWaterBottleNames();
+        setLoading(true);
+
+        if (userWaterBottles)
+            _getWaterBottleNames();
+        else
+            setUserBottles([]);
+        
+        setLoading(false);
     }, [userWaterBottles]);
 
     // When all water bottles loaded, set the current bottle to be the first one in the list
@@ -73,8 +91,10 @@ export default function BottleInfoCards(
     React.useEffect(() => {
         setLoading(true);
 
-        if (!currentBottle)
+        if (!currentBottle) {
+            setLoading(false);
             return;
+        }  
 
         attachBottleHandler(
             currentBottle,
@@ -108,14 +128,14 @@ export default function BottleInfoCards(
         let wbToUpdate = userBottles.findIndex((wb) => wb.key == currentBottle);
         if (wbToUpdate !== undefined) {
             let newUserBottles = [...userBottles];
-            newUserBottles[wbToUpdate].label = newName;
+            newUserBottles[wbToUpdate]!.label = newName;
             setUserBottles(newUserBottles);
         }
     }
 
     // If user has no associated water bottles, show onboarding
     if (!userWaterBottles || userWaterBottles.length == 0) {
-        return <p>No water bottles!</p>;
+        return <OnboardingCard />;
     }
     
     return (<>

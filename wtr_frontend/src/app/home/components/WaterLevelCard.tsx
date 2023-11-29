@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Card, Dropdown, Modal, Space, Typography } from 'antd';
+import { Button, Card, Dropdown, Space, Typography } from 'antd';
 import type { MenuProps } from 'antd';
 import { Liquid } from '@ant-design/plots';
 import { DownOutlined, EditOutlined, EllipsisOutlined } from '@ant-design/icons';
