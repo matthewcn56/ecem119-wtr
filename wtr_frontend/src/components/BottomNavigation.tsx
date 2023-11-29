@@ -2,9 +2,9 @@ import { Button } from 'antd';
 
 import styles from '@/styles/BottomNavigation.module.css';
 
-export function BottomNavigationItem(props: { label: string, icon: React.ReactNode }) {
+export function BottomNavigationItem(props: { label: string, icon: React.ReactNode, onClick?: React.MouseEventHandler<HTMLElement> }) {
     return (
-        <Button icon={props.icon} type="text">
+        <Button icon={props.icon} type="text" onClick={props.onClick}>
             { props.label }
         </Button>
     );

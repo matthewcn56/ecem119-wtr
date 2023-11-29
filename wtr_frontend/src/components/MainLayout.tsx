@@ -13,21 +13,6 @@ import styles from '@/styles/MainLayout.module.css';
 export default function MainLayout({ children }: { children: React.ReactNode }): JSX.Element {
     const router = useRouter();
 
-    const [currentPage, setCurrentPage] = React.useState<number>(0);
-
-    function _handlePageChange(event: React.SyntheticEvent, newPage: number) {
-        setCurrentPage(newPage);
-
-        switch (newPage) {
-            case 0:
-                router.push('/');
-                break;
-            case 1:
-                router.push('/family');
-                break;
-        }
-    }
-
     return (
         <Layout style={{ minHeight: '100vh' }}>
             <Layout.Header className={styles.header}>
@@ -44,8 +29,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }):
             </Layout.Content>
             <Layout.Footer className={styles.footer}>
                 <BottomNavigation>
-                    <BottomNavigationItem label="Home" icon={<HomeOutlined />} />
-                    <BottomNavigationItem label="Family" icon={<UsergroupDeleteOutlined />} />
+                    <BottomNavigationItem label="Home" icon={<HomeOutlined />} onClick={() => router.push('/')} />
+                    <BottomNavigationItem label="Family" icon={<UsergroupDeleteOutlined />} onClick={() => router.push('/family')} />
                 </BottomNavigation>
             </Layout.Footer>
         </Layout>
