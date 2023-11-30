@@ -1,4 +1,4 @@
-import { child, get, getDatabase, ref, set } from 'firebase/database';
+import { child, get, getDatabase, onValue, ref, set } from 'firebase/database';
 
 import firebaseApp from '@/firebase/config';
 import IUser from '@/types/IUser';
@@ -22,4 +22,14 @@ export function addUser(user: Partial<IUser>) {
         ref(db, `users/${user.uid}`),
         user
     );
+}
+
+export function attachUserHandler(uid: string, callback: (arg0: IUser) => any) {
+    const userRef = ref(db, `users/${uid}`);
+    onValue(userRef, (snapshot) => {
+        console.log("Updated user detected");
+
+        const userData = snapshot.val();
+        callback(userData);
+    });
 }

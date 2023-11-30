@@ -11,12 +11,8 @@ export default function UserAvatarDropdown() {
     const userActions: MenuProps['items'] = [
         {
             key: 1,
-            label: (
-                <Space style={{ display: 'flex', alignItems: 'center' }}>
-                    <CloseOutlined />
-                    <a target="_blank" rel="noopener noreferer" onClick={signOut}>Sign out</a>
-                </Space>
-            )
+            label: <a target="_blank" rel="noopener noreferer" onClick={signOut}>Sign out</a>,
+            icon: <CloseOutlined />
         }
     ]
 
