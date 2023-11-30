@@ -15,6 +15,10 @@
 
 #define LED 2
 
+//CONSTANTS FOR NUMBER GEN
+const char numericCharacters[] = "0123456789";
+const int numericCharactersLength = sizeof(numericCharacters) - 1;
+
 Adafruit_MPU6050 mpu;
 
 
@@ -47,10 +51,7 @@ float SUSSY_THRESHOLD = 0.3;
 const int buttonPin = 5;
 int buttonState = 0;  // variable for reading the pushbutton status
 
-bool shouldBlink = false;
-
 bool attemptingPairing = false;
-bool blinkState = false;
 
 
 float MAX_VOLUME = 1000;
@@ -291,20 +292,28 @@ void readDistance(){
   }
 }
 
-
 String generateRandomString(int length) {
-  String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   String randomString = "";
   
   for (int i = 0; i < length; i++) {
-    int randomIndex = random(characters.length());
-    randomString += characters.charAt(randomIndex);
+    int randomIndex = random(numericCharactersLength);
+    randomString += numericCharacters[randomIndex];
   }
 
   return randomString;
 }
 
+void pairBlink(){
+  for(int i=0;i<5;i++){
+  digitalWrite(LED, HIGH);
+  delay(100);
+  digitalWrite(LED,LOW);
+  delay(100);
+  }
+}
+
 void initiatePair(){
+  pairBlink();
   bool exists = true;
   //generate random 8 digit code
   String code = "";
@@ -341,8 +350,6 @@ void initiatePair(){
   if(didSet){
     Serial.print("Made default water bottle with code: ");
     Serial.println(code);
-    shouldBlink = false;
-    blinkState = false;
     attemptingPairing = false;
   }
   else {
@@ -369,19 +376,12 @@ void loop() {
   buttonState = digitalRead(buttonPin);
 
   if (buttonState == HIGH) {
-   shouldBlink = true;
    if(!attemptingPairing){
     Serial.println("Attempting pairing!");
     attemptingPairing = true;
     initiatePair();
    }
   } 
-
-  if(shouldBlink && millis() - lastBlinkTime > BLINK_INTERVAL){
-    blinkState = !blinkState;
-    lastBlinkTime = millis();
-  }
-  digitalWrite(LED,blinkState);
 
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
