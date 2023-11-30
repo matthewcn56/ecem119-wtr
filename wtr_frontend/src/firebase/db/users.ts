@@ -1,4 +1,4 @@
-import { child, get, getDatabase, onValue, ref, set } from 'firebase/database';
+import { child, get, getDatabase, onValue, ref, set, update } from 'firebase/database';
 
 import firebaseApp from '@/firebase/config';
 import IUser from '@/types/IUser';
@@ -31,5 +31,14 @@ export function attachUserHandler(uid: string, callback: (arg0: IUser) => any) {
 
         const userData = snapshot.val();
         callback(userData);
+    });
+}
+
+export async function addUserWaterBottles(uid: string, bottleId: string) {
+    const userRef = ref(db, `users/${uid}`);
+    getUser(uid).then((user) => {
+        update(userRef, {
+            'waterBottles': [...(user.waterBottles ?? []), bottleId]
+        });
     });
 }

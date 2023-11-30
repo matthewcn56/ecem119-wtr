@@ -18,6 +18,19 @@ export function removeBottleHandler(bottleID: string) {
     off(bottleRef);
 }
 
+export async function checkWaterBottleExists(bottleID: string): Promise<void> {
+    const bottleRef = ref(db, `waterBottles/${bottleID}`);
+
+    return new Promise((resolve, reject) => {
+        get(bottleRef).then((snapshot) => {
+            if (snapshot.exists())
+                resolve();
+            else
+                reject();
+        });
+    });
+}
+
 export async function getWaterBottleName(bottleID: string): Promise<string> {
     const bottleRef = ref(db, `waterBottles/${bottleID}`);
 
@@ -34,7 +47,12 @@ export async function getWaterBottleName(bottleID: string): Promise<string> {
     });
 }
 
-export function updateBottleData(bottleID: string, newBottleData: Partial<IBottleData>) {
+export async function updateBottleData(bottleID: string, newBottleData: Partial<IBottleData>): Promise<void> {
     const bottleRef = ref(db, `waterBottles/${bottleID}`);
-    update(bottleRef, newBottleData);
+    
+    return new Promise((resolve, reject) => {
+        update(bottleRef, newBottleData)
+            .then(() => resolve())
+            .catch(() => reject());
+    });
 }

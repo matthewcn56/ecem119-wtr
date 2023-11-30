@@ -7,6 +7,8 @@ export default function ScanStep(props: { codeRef: React.MutableRefObject<string
             <Divider>or</Divider>
             <Flex vertical justify="center" align="center" gap={10}>
                 <Input 
+                    showCount
+                    maxLength={6}
                     placeholder="Enter your wtr code"
                     onChange={(e) => props.codeRef.current = e.target.value}
                     onPressEnter={props.nextStep}
