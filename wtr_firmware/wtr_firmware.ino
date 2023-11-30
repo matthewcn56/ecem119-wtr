@@ -36,6 +36,10 @@ float CM_DIFF_THRESHOLD = 1;
 bool taskCompleted = false;
 float SUSSY_THRESHOLD = 0.3;
 
+const int buttonPin = 5;
+int buttonState = 0;  // variable for reading the pushbutton status
+
+
 float MAX_VOLUME = 1000;
 float MAX_CM = 20.0;
 
@@ -111,6 +115,8 @@ void setup() {
     delay(10); // will pause Zero, Leonardo, etc until serial console opens
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
+
+  pinMode(buttonPin, INPUT); //button pin input
 
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -279,7 +285,12 @@ void loop() {
   }
 
   bool shouldUpdate = determineUpdate();
-  
+
+  buttonState = digitalRead(buttonPin);
+
+  if (buttonState == HIGH) {
+   Serial.println("Button pressed!");
+  } 
 
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
