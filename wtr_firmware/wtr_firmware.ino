@@ -35,6 +35,8 @@ int SEND_INTERVAL = 1000;
 int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
 
+int CODE_LEN = 8;
+
 int BLINK_INTERVAL = 100;
 unsigned long lastBlinkTime=0;
 
@@ -46,6 +48,8 @@ const int buttonPin = 5;
 int buttonState = 0;  // variable for reading the pushbutton status
 
 bool shouldBlink = false;
+
+bool attemptingPairing = false;
 bool blinkState = false;
 
 
@@ -288,6 +292,71 @@ void readDistance(){
 }
 
 
+String generateRandomString(int length) {
+  String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  String randomString = "";
+  
+  for (int i = 0; i < length; i++) {
+    int randomIndex = random(characters.length());
+    randomString += characters.charAt(randomIndex);
+  }
+
+  return randomString;
+}
+
+void initiatePair(){
+  bool exists = true;
+  //generate random 8 digit code
+  String code = "";
+  //check if it exists in firebase
+  while(exists==true){
+    code = generateRandomString(CODE_LEN);
+    if (Firebase.getJSON(fbdo, "/waterBottles/" +code)) {
+      Serial.print(code);
+      Serial.println(" already exists");
+    }
+    else {
+      exists= false;
+    }
+  }
+
+  Serial.print("Generated code: ");
+  Serial.println(code);
+
+  FirebaseJson defaultWaterBottle;
+
+  // { 
+  //   currentWaterVolume: 0,
+  //   lastDrankTime: 0,
+  //   maxVolume: 1000,
+  //   name: ""
+  // }
+  defaultWaterBottle.add("currentWaterVolume",0);
+  defaultWaterBottle.add("lastDrinkTime",0);
+  defaultWaterBottle.add("maxVolume",1000);
+  defaultWaterBottle.add("name","");
+
+
+  bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+code, defaultWaterBottle);
+  if(didSet){
+    Serial.print("Made default water bottle with code: ");
+    Serial.println(code);
+    shouldBlink = false;
+    blinkState = false;
+    attemptingPairing = false;
+  }
+  else {
+    Serial.println("Error initiating pairing");
+  }
+
+
+
+}
+
+
+
+
+
 void loop() {
   //read if READ_INTERVAL millis have passed
   if (millis() - lastReadTime > READ_INTERVAL){ 
@@ -300,12 +369,13 @@ void loop() {
   buttonState = digitalRead(buttonPin);
 
   if (buttonState == HIGH) {
-   Serial.println("Button pressed!");
    shouldBlink = true;
-  } else{
-    shouldBlink = false;
-    blinkState=false;
-  }
+   if(!attemptingPairing){
+    Serial.println("Attempting pairing!");
+    attemptingPairing = true;
+    initiatePair();
+   }
+  } 
 
   if(shouldBlink && millis() - lastBlinkTime > BLINK_INTERVAL){
     blinkState = !blinkState;
