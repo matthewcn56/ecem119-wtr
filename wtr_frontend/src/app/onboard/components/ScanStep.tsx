@@ -32,7 +32,7 @@ export default function ScanStep(props: { codeRef: React.MutableRefObject<string
             <Flex vertical justify="center" align="center" gap={10}>
                 <Input 
                     showCount
-                    maxLength={8}
+                    maxLength={6}
                     placeholder="Enter your wtr code"
                     onChange={(e) => props.codeRef.current = e.target.value}
                     onPressEnter={props.nextStep}
