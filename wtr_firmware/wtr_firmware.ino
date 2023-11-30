@@ -13,6 +13,8 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 
+#define LED 2
+
 Adafruit_MPU6050 mpu;
 
 
@@ -32,12 +34,19 @@ float lastFiveReadingsCM[5] ={-1,-1,-1,-1,-1};
 int SEND_INTERVAL = 1000;
 int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
+
+int BLINK_INTERVAL = 100;
+unsigned long lastBlinkTime=0;
+
 float CM_DIFF_THRESHOLD = 1;
 bool taskCompleted = false;
 float SUSSY_THRESHOLD = 0.3;
 
 const int buttonPin = 5;
 int buttonState = 0;  // variable for reading the pushbutton status
+
+bool shouldBlink = false;
+bool blinkState = false;
 
 
 float MAX_VOLUME = 1000;
@@ -117,6 +126,8 @@ void setup() {
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
 
   pinMode(buttonPin, INPUT); //button pin input
+
+  pinMode(LED,OUTPUT);
 
   if (!mpu.begin()) {
     Serial.println("Failed to find MPU6050 chip");
@@ -290,7 +301,17 @@ void loop() {
 
   if (buttonState == HIGH) {
    Serial.println("Button pressed!");
-  } 
+   shouldBlink = true;
+  } else{
+    shouldBlink = false;
+    blinkState=false;
+  }
+
+  if(shouldBlink && millis() - lastBlinkTime > BLINK_INTERVAL){
+    blinkState = !blinkState;
+    lastBlinkTime = millis();
+  }
+  digitalWrite(LED,blinkState);
 
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
