@@ -25,10 +25,11 @@ float lastSent = 0;
 float lastSentPercentage =0;
 float lastFiveReadingsCM[5] ={-1,-1,-1,-1,-1};
 int SEND_INTERVAL = 1000;
-int READ_INTERVAL = 250;
+int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
 float CM_DIFF_THRESHOLD = 1;
 bool taskCompleted = false;
+float SUSSY_THRESHOLD = 0.3;
 
 float MAX_VOLUME = 1000;
 float MAX_CM = 20.0;
@@ -175,11 +176,15 @@ void readDistance(){
   distanceInch = distanceCm * CM_TO_INCH;
   
   // Prints the distance in the Serial Monitor
-  Serial.print("Distance (cm): ");
-  Serial.println(distanceCm);
+
   // Serial.print("Distance (inch): ");
   // Serial.println(distanceInch);
-  addReading(distanceCm);
+  //ensuring it's a valid reading
+  if(distanceCm >SUSSY_THRESHOLD){
+    Serial.print("Distance (cm): ");
+    Serial.println(distanceCm);
+    addReading(distanceCm);
+  }
 }
 
 
