@@ -9,9 +9,16 @@
 // Provide the RTDB payload printing info and other helper functions.
 #include <addons/RTDBHelper.h>
 
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+#include <Wire.h>
+
+#define LED 2
+
+Adafruit_MPU6050 mpu;
 
 
-const int trigPin = 22;
+const int trigPin = 4;
 const int echoPin = 23;
 
 //define sound speed in cm/uS
@@ -25,10 +32,22 @@ float lastSent = 0;
 float lastSentPercentage =0;
 float lastFiveReadingsCM[5] ={-1,-1,-1,-1,-1};
 int SEND_INTERVAL = 1000;
-int READ_INTERVAL = 250;
+int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
+
+int BLINK_INTERVAL = 100;
+unsigned long lastBlinkTime=0;
+
 float CM_DIFF_THRESHOLD = 1;
 bool taskCompleted = false;
+float SUSSY_THRESHOLD = 0.3;
+
+const int buttonPin = 5;
+int buttonState = 0;  // variable for reading the pushbutton status
+
+bool shouldBlink = false;
+bool blinkState = false;
+
 
 float MAX_VOLUME = 1000;
 float MAX_CM = 20.0;
@@ -101,13 +120,84 @@ bool determineUpdate(){
 
 void setup() {
   Serial.begin(115200); // Starts the serial communication
+  while (!Serial)
+    delay(10); // will pause Zero, Leonardo, etc until serial console opens
   pinMode(trigPin, OUTPUT); // Sets the trigPin as an Output
   pinMode(echoPin, INPUT); // Sets the echoPin as an Input
-  
 
-  Serial.begin(115200);
-  Serial.println();
-  Serial.println();
+  pinMode(buttonPin, INPUT); //button pin input
+
+  pinMode(LED,OUTPUT);
+
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
+  }
+  Serial.println("MPU6050 Found!");
+
+
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  Serial.print("Accelerometer range set to: ");
+  switch (mpu.getAccelerometerRange()) {
+  case MPU6050_RANGE_2_G:
+    Serial.println("+-2G");
+    break;
+  case MPU6050_RANGE_4_G:
+    Serial.println("+-4G");
+    break;
+  case MPU6050_RANGE_8_G:
+    Serial.println("+-8G");
+    break;
+  case MPU6050_RANGE_16_G:
+    Serial.println("+-16G");
+    break;
+  }
+  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  Serial.print("Gyro range set to: ");
+  switch (mpu.getGyroRange()) {
+  case MPU6050_RANGE_250_DEG:
+    Serial.println("+- 250 deg/s");
+    break;
+  case MPU6050_RANGE_500_DEG:
+    Serial.println("+- 500 deg/s");
+    break;
+  case MPU6050_RANGE_1000_DEG:
+    Serial.println("+- 1000 deg/s");
+    break;
+  case MPU6050_RANGE_2000_DEG:
+    Serial.println("+- 2000 deg/s");
+    break;
+  }
+
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  Serial.print("Filter bandwidth set to: ");
+  switch (mpu.getFilterBandwidth()) {
+  case MPU6050_BAND_260_HZ:
+    Serial.println("260 Hz");
+    break;
+  case MPU6050_BAND_184_HZ:
+    Serial.println("184 Hz");
+    break;
+  case MPU6050_BAND_94_HZ:
+    Serial.println("94 Hz");
+    break;
+  case MPU6050_BAND_44_HZ:
+    Serial.println("44 Hz");
+    break;
+  case MPU6050_BAND_21_HZ:
+    Serial.println("21 Hz");
+    break;
+  case MPU6050_BAND_10_HZ:
+    Serial.println("10 Hz");
+    break;
+  case MPU6050_BAND_5_HZ:
+    Serial.println("5 Hz");
+    break;
+  }
+
+
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   Serial.print("Connecting to Wi-Fi");
@@ -175,11 +265,26 @@ void readDistance(){
   distanceInch = distanceCm * CM_TO_INCH;
   
   // Prints the distance in the Serial Monitor
-  Serial.print("Distance (cm): ");
-  Serial.println(distanceCm);
+
   // Serial.print("Distance (inch): ");
   // Serial.println(distanceInch);
-  addReading(distanceCm);
+  //ensuring it's a valid reading
+
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  float ay = 0;
+
+  ay = a.acceleration.y;
+
+  //only valid if above sussy threshold and is upright
+  if(distanceCm >SUSSY_THRESHOLD && ay >8){
+     Serial.print("ay: ");
+    Serial.println(ay);
+    Serial.print("Distance (cm): ");
+    Serial.println(distanceCm);
+    addReading(distanceCm);
+  }
 }
 
 
@@ -191,7 +296,22 @@ void loop() {
   }
 
   bool shouldUpdate = determineUpdate();
-  
+
+  buttonState = digitalRead(buttonPin);
+
+  if (buttonState == HIGH) {
+   Serial.println("Button pressed!");
+   shouldBlink = true;
+  } else{
+    shouldBlink = false;
+    blinkState=false;
+  }
+
+  if(shouldBlink && millis() - lastBlinkTime > BLINK_INTERVAL){
+    blinkState = !blinkState;
+    lastBlinkTime = millis();
+  }
+  digitalWrite(LED,blinkState);
 
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
