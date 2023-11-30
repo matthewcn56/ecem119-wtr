@@ -9,11 +9,14 @@ import PairingStep from './PairingStep';
 
 export default function OnboardingCard() {
     const [currentStep, setCurrentStep] = React.useState<number>(0);
+    const [pairSuccess, setPairSuccess] = React.useState<boolean>(false);
+    const [errorOccurred, setErrorOccurred] = React.useState<boolean>(false);
+
     const wtrCode = React.useRef<string>("");
 
     const steps = [
         {
-            title: 'Init',
+            title: 'Initialize',
             content: <InitializeStep nextStep={() => setCurrentStep(1)} />,
         },
         {
@@ -22,10 +25,23 @@ export default function OnboardingCard() {
         },
         {
             title: 'Pair',
-            content: <PairingStep wtrCode={wtrCode.current} />,
-            icon: currentStep == 2 ? <LoadingOutlined /> : undefined,
+            content: (
+                <PairingStep
+                    wtrCode={wtrCode.current} 
+                    reset={_reset} 
+                    onError={() => setErrorOccurred(true)}
+                    onSuccess={() => setPairSuccess(true)}
+                />
+            ),
+            icon: (currentStep == 2 && !errorOccurred && !pairSuccess) ? <LoadingOutlined /> : undefined,
         }
     ];
+
+    function _reset() {
+        setCurrentStep(0);
+        setErrorOccurred(false);
+        setPairSuccess(false);
+    }
 
     return (
         <Card
@@ -36,6 +52,7 @@ export default function OnboardingCard() {
             <Flex vertical justify='flex-start' align='center'>
                 <Steps 
                     style={{ height: '80px' }} 
+                    status={errorOccurred ? 'error' : undefined}
                     current={currentStep} 
                     items={steps.map((s) => ({ key: s.title, title: s.title, icon: s.icon }))} 
                     labelPlacement='vertical' 
