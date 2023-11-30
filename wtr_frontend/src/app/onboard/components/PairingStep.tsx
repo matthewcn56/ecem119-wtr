@@ -6,6 +6,7 @@ import { Button, Flex, Typography } from 'antd';
 
 import { useAuthContext } from '@/context/AuthContext';
 import { checkWaterBottleExists, updateBottleData } from '@/firebase/db/bottles';
+import { addUserWaterBottles } from '@/firebase/db/users';
 import { ArrowRightOutlined, RedoOutlined } from '@ant-design/icons';
 
 export default function PairingStep(props: { 
@@ -47,7 +48,9 @@ export default function PairingStep(props: {
         }, 1500);
 
         checkCode(props.wtrCode).then(() => {
-            setBottleDetails(user!.uid, user!.displayName);
+            setBottleDetails(user!.uid, user!.displayName).then(() => {
+                addUserWaterBottles(user!.uid, props.wtrCode);
+            });
         });
     }, []);
 
