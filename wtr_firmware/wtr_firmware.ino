@@ -15,6 +15,10 @@
 
 #define LED 2
 
+//CONSTANTS FOR NUMBER GEN
+const char numericCharacters[] = "0123456789";
+const int numericCharactersLength = sizeof(numericCharacters) - 1;
+
 Adafruit_MPU6050 mpu;
 
 
@@ -35,6 +39,8 @@ int SEND_INTERVAL = 1000;
 int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
 
+int CODE_LEN = 8;
+
 int BLINK_INTERVAL = 100;
 unsigned long lastBlinkTime=0;
 
@@ -45,8 +51,7 @@ float SUSSY_THRESHOLD = 0.3;
 const int buttonPin = 5;
 int buttonState = 0;  // variable for reading the pushbutton status
 
-bool shouldBlink = false;
-bool blinkState = false;
+bool attemptingPairing = false;
 
 
 float MAX_VOLUME = 1000;
@@ -287,6 +292,77 @@ void readDistance(){
   }
 }
 
+String generateRandomString(int length) {
+  String randomString = "";
+  
+  for (int i = 0; i < length; i++) {
+    int randomIndex = random(numericCharactersLength);
+    randomString += numericCharacters[randomIndex];
+  }
+
+  return randomString;
+}
+
+void pairBlink(){
+  for(int i=0;i<5;i++){
+  digitalWrite(LED, HIGH);
+  delay(100);
+  digitalWrite(LED,LOW);
+  delay(100);
+  }
+}
+
+void initiatePair(){
+  pairBlink();
+  bool exists = true;
+  //generate random 8 digit code
+  String code = "";
+  //check if it exists in firebase
+  while(exists==true){
+    code = generateRandomString(CODE_LEN);
+    if (Firebase.getJSON(fbdo, "/waterBottles/" +code)) {
+      Serial.print(code);
+      Serial.println(" already exists");
+    }
+    else {
+      exists= false;
+    }
+  }
+
+  Serial.print("Generated code: ");
+  Serial.println(code);
+
+  FirebaseJson defaultWaterBottle;
+
+  // { 
+  //   currentWaterVolume: 0,
+  //   lastDrankTime: 0,
+  //   maxVolume: 1000,
+  //   name: ""
+  // }
+  defaultWaterBottle.add("currentWaterVolume",0);
+  defaultWaterBottle.add("lastDrinkTime",0);
+  defaultWaterBottle.add("maxVolume",1000);
+  defaultWaterBottle.add("name","");
+
+
+  bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+code, defaultWaterBottle);
+  if(didSet){
+    Serial.print("Made default water bottle with code: ");
+    Serial.println(code);
+    attemptingPairing = false;
+  }
+  else {
+    Serial.println("Error initiating pairing");
+  }
+
+
+
+}
+
+
+
+
 
 void loop() {
   //read if READ_INTERVAL millis have passed
@@ -300,18 +376,12 @@ void loop() {
   buttonState = digitalRead(buttonPin);
 
   if (buttonState == HIGH) {
-   Serial.println("Button pressed!");
-   shouldBlink = true;
-  } else{
-    shouldBlink = false;
-    blinkState=false;
-  }
-
-  if(shouldBlink && millis() - lastBlinkTime > BLINK_INTERVAL){
-    blinkState = !blinkState;
-    lastBlinkTime = millis();
-  }
-  digitalWrite(LED,blinkState);
+   if(!attemptingPairing){
+    Serial.println("Attempting pairing!");
+    attemptingPairing = true;
+    initiatePair();
+   }
+  } 
 
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
