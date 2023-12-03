@@ -58,22 +58,31 @@ export default function ConsumptionStatisticCard(props: { userWaterBottles: stri
             loading={loading}
         >
             <Flex style={{ width: '100%', height: '100%' }} justify="center" align="center" gap="middle">
-                <Statistic
-                    value={ Math.abs(percentChange) }
-                    precision={2}
-                    valueStyle={{ color: percentChange >= 0 ? '#3f8600' : '#ff2b4b' }}
-                    prefix={ percentChange >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                    suffix="%"
-                />
-                <Divider type="vertical" style={{ height: '60px' }} />
-                <div style={{ textAlign: 'center' }}>
-                    <Typography.Title level={3} style={{ margin: 0 }}>
-                        {waterConsumed[0]} mL
-                    </Typography.Title>
-                    <Typography>
-                        today
-                    </Typography>
-                </div>
+                {
+                    props.userWaterBottles.length < 0 || Number.isNaN(percentChange)
+                        ? (
+                            <Typography.Title level={2} style={{ margin: 0 }}>
+                                No Data
+                            </Typography.Title>
+                        ) : (<>
+                            <Statistic
+                                value={ Math.abs(percentChange) }
+                                precision={2}
+                                valueStyle={{ color: percentChange >= 0 ? '#3f8600' : '#ff2b4b' }}
+                                prefix={ percentChange >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                                suffix="%"
+                            />
+                            <Divider type="vertical" style={{ height: '60px' }} />
+                            <div style={{ textAlign: 'center' }}>
+                                <Typography.Title level={3} style={{ margin: 0 }}>
+                                    {waterConsumed[0]} mL
+                                </Typography.Title>
+                                <Typography>
+                                    today
+                                </Typography>
+                            </div>
+                        </>)
+                }
             </Flex>
         </Card>
     );
