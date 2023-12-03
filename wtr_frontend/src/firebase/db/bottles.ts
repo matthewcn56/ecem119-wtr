@@ -1,7 +1,7 @@
 import { get, getDatabase, ref, off, onValue, update } from 'firebase/database';
 
 import firebaseApp from '@/firebase/config';
-import IBottleData from '@/types/IBottleData';
+import IBottleData, { IConsumptionData } from '@/types/IBottleData';
 
 const db = getDatabase(firebaseApp);
 
@@ -44,6 +44,28 @@ export async function getWaterBottleName(bottleID: string): Promise<string> {
         }).catch((e) => {
             reject("Error occurred: " + e);
         });
+    });
+}
+
+export async function getWaterBottleConsumption(bottleID: string): Promise<IConsumptionData | null> {
+    const bottleRef = ref(db, `waterBottles/${bottleID}`);
+
+    return new Promise((resolve, reject) => {
+        get(bottleRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                const { todaysDate, waterConsumedToday, waterConsumedYesterday } = snapshot.val() as IBottleData;
+
+                if (todaysDate != undefined && waterConsumedToday != undefined && waterConsumedYesterday != undefined) {
+                    resolve({ todaysDate, waterConsumedToday, waterConsumedYesterday } as IConsumptionData);
+                } else {
+                    resolve(null);
+                }
+            } else {
+                reject("Water bottle does not exist");
+            }
+        }).catch((e) => {
+            reject("Error occurred: " + e);
+        })
     });
 }
 

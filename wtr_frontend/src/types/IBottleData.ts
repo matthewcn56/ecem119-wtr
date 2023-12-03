@@ -4,4 +4,9 @@ export default interface IBottleData {
     currentWaterVolume: number,
     maxVolume: number,
     lastDrankTime: number,
+    todaysDate?: string,
+    waterConsumedToday?: number,
+    waterConsumedYesterday?: number,
 }
+
+export type IConsumptionData = Required<Pick<IBottleData, "todaysDate" | "waterConsumedToday" | "waterConsumedYesterday">>;
