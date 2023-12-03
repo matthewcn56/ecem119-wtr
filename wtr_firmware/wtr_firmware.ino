@@ -12,12 +12,15 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+// include library to read and write from flash memory
+#include <EEPROM.h>
+
+// define the number of bytes you want to access
+#define PERSISTENT_CODE_SIZE 6
 
 #define LED 2
 
 //CONSTANTS FOR NUMBER GEN
-const char numericCharacters[] = "0123456789";
-const int numericCharactersLength = sizeof(numericCharacters) - 1;
 
 Adafruit_MPU6050 mpu;
 
@@ -39,7 +42,7 @@ int SEND_INTERVAL = 1000;
 int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
 
-int CODE_LEN = 8;
+int CODE_LEN = 6;
 
 int BLINK_INTERVAL = 100;
 unsigned long lastBlinkTime=0;
@@ -100,7 +103,7 @@ float calcAvgReading(){
 }
 
 float cmToPercentage(float cm){
-  return (cm/MAX_CM);
+  return 1- (cm/MAX_CM);
 }
 
 
@@ -293,13 +296,13 @@ void readDistance(){
 }
 
 String generateRandomString(int length) {
+  String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   String randomString = "";
   
   for (int i = 0; i < length; i++) {
-    int randomIndex = random(numericCharactersLength);
-    randomString += numericCharacters[randomIndex];
+    int randomIndex = random(characters.length());
+    randomString += characters.charAt(randomIndex);
   }
-
   return randomString;
 }
 
