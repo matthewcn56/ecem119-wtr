@@ -38,6 +38,8 @@ const char* ntpServer = "pool.ntp.org";
 const long  gmtOffset_sec = -28800;
 const int   daylightOffset_sec = 3600;
 
+char* BOTTLE_ID_KEY = "bid";
+
 
 
 const int trigPin = 4;
@@ -78,7 +80,7 @@ float MAX_CM = 17.5;
 
 int PAST_READINGS_SIZE = 5;
 
-String BOTTLE_ID = "mattchoo_test";
+String BOTTLE_ID = "";
 
 bool shouldUpdate = false;
 int valuesRead = 0;
@@ -277,6 +279,14 @@ void setup() {
   // Note: Namespace name is limited to 15 chars.
   preferences.begin("wtr", false);
 
+  BOTTLE_ID = preferences.getString(BOTTLE_ID_KEY, "");
+
+  Serial.print("Bottle ID in memory is: ");
+  Serial.println(BOTTLE_ID);
+
+
+
+
 
 
 
@@ -410,8 +420,10 @@ void initiatePair(){
     }
   }
 
-  Serial.print("Generated code: ");
+  Serial.print("Bottle paired with code: ");
   Serial.println(code);
+  BOTTLE_ID =code;
+  preferences.putString(BOTTLE_ID_KEY,BOTTLE_ID);
 
   FirebaseJson defaultWaterBottle;
 
@@ -427,11 +439,13 @@ void initiatePair(){
   defaultWaterBottle.add("name","");
 
 
-  bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+code, defaultWaterBottle);
+  bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+BOTTLE_ID, defaultWaterBottle);
   if(didSet){
     Serial.print("Made default water bottle with code: ");
     Serial.println(code);
     attemptingPairing = false;
+    lastSent = 0;
+    lastSentPercentage = 0;
   }
   else {
     Serial.println("Error initiating pairing");
@@ -467,70 +481,76 @@ void loop() {
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
   {
-    taskCompleted = true;
-
-    Serial.printf("Set timestamp... %s\n", Firebase.setTimestamp(fbdo, "/waterBottles/" +BOTTLE_ID + "/lastDrankTime") ? "ok" : fbdo.errorReason().c_str());
-
-    if (fbdo.httpCode() == FIREBASE_ERROR_HTTP_CODE_OK)
-    {
-      // In setTimestampAsync, the following timestamp will be 0 because the response payload was ignored for all async functions.
-
-      // Timestamp saved in millisecond, get its seconds from int value
-      Serial.print("TIMESTAMP (Seconds): ");
-      Serial.println(fbdo.to<int>());
-
-
-      // Or print the total milliseconds from double value
-      // Due to bugs in Serial.print in Arduino library, use printf to print double instead.
-      printf("TIMESTAMP (milliSeconds): %lld\n", fbdo.to<uint64_t>());
-    }
-
-    float valToSend = calcAvgReading();
-    float valToSendPerc = cmToPercentage(valToSend);
-
-    Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
-    lastSent = valToSend;
-    Serial.print("Updating with val of: ");
-    Serial.println(valToSendPerc);
-
-    struct tm timeinfo;
-    if(!getLocalTime(&timeinfo)){
-      Serial.println("Failed to obtain time");
-      return;
-    }
-    int todays_day = timeinfo.tm_mday;
-    int todays_year = timeinfo.tm_year + 1900;
-    int todays_month = timeinfo.tm_mon+1;
-    String todays_day_str = String(todays_day);
-    if(todays_day<10){
-      todays_day_str = "0" + todays_day_str;
-    }
-
-    String todays_month_str = String(todays_month);
-    if(todays_month<10){
-      todays_month_str = "0" + todays_month_str;
-    }
-
-    String date_timestamp = String(todays_year) + todays_month_str + todays_day_str;
-    //TODO: CODE
-    bool got_data = Firebase.getString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate");
-    if(!got_data){
-      Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
-      Serial.print("Setting today's date to: ");
-      Serial.print(date_timestamp);
+    //check if paired
+    if(BOTTLE_ID == ""){
+      Serial.println("Must pair bottle!");
     }
     else {
-      String old_timestamp = fbdo.to<String>();
-      if(!old_timestamp.equals(date_timestamp)){
-        Serial.print("Updating today's date to: ");
-        Serial.print(date_timestamp);
+      taskCompleted = true;
+
+      Serial.printf("Set timestamp... %s\n", Firebase.setTimestamp(fbdo, "/waterBottles/" +BOTTLE_ID + "/lastDrankTime") ? "ok" : fbdo.errorReason().c_str());
+
+      if (fbdo.httpCode() == FIREBASE_ERROR_HTTP_CODE_OK)
+      {
+        // In setTimestampAsync, the following timestamp will be 0 because the response payload was ignored for all async functions.
+
+        // Timestamp saved in millisecond, get its seconds from int value
+        Serial.print("TIMESTAMP (Seconds): ");
+        Serial.println(fbdo.to<int>());
+
+
+        // Or print the total milliseconds from double value
+        // Due to bugs in Serial.print in Arduino library, use printf to print double instead.
+        printf("TIMESTAMP (milliSeconds): %lld\n", fbdo.to<uint64_t>());
+      }
+
+      float valToSend = calcAvgReading();
+      float valToSendPerc = cmToPercentage(valToSend);
+
+      Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
+      lastSent = valToSend;
+      Serial.print("Updating with val of: ");
+      Serial.println(valToSendPerc);
+
+      struct tm timeinfo;
+      if(!getLocalTime(&timeinfo)){
+        Serial.println("Failed to obtain time");
+        return;
+      }
+      int todays_day = timeinfo.tm_mday;
+      int todays_year = timeinfo.tm_year + 1900;
+      int todays_month = timeinfo.tm_mon+1;
+      String todays_day_str = String(todays_day);
+      if(todays_day<10){
+        todays_day_str = "0" + todays_day_str;
+      }
+
+      String todays_month_str = String(todays_month);
+      if(todays_month<10){
+        todays_month_str = "0" + todays_month_str;
+      }
+
+      String date_timestamp = String(todays_year) + todays_month_str + todays_day_str;
+      //TODO: CODE
+      bool got_data = Firebase.getString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate");
+      if(!got_data){
         Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+        Serial.print("Setting today's date to: ");
+        Serial.print(date_timestamp);
       }
       else {
-        Serial.println("Date is the same");
+        String old_timestamp = fbdo.to<String>();
+        if(!old_timestamp.equals(date_timestamp)){
+          Serial.print("Updating today's date to: ");
+          Serial.print(date_timestamp);
+          Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+        }
+        else {
+          Serial.println("Date is the same");
+        }
       }
-    }
 
-    taskCompleted = false;
+      taskCompleted = false;
+    }
   }
 }
