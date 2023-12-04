@@ -29,16 +29,16 @@ export default function lastSipTimeHumanReadable(lastSipTime: number, short: boo
         if (hourDifference == 1)
             timeString = short ? "1 hr ago" : "1 hour ago";
         else
-            timeString = short ? `${hourDifference} hrs ago` : `${hourDifference} hrs ago`;
+            timeString = short ? `${hourDifference} hrs ago` : `${hourDifference} hours ago`;
     }
     // Less than a week
     else if (timeDifference < 60 * 24 * 7) {
         const dayDifference = Math.round(timeDifference / 60 / 24);
         
         if (dayDifference == 1)
-            timeString = short ? "1 hr ago" : "1 hour ago";
+            timeString = short ? "1 day ago" : "1 day ago";
         else
-            timeString = short ? `${dayDifference} hrs ago` : `${dayDifference} hrs ago`;
+            timeString = short ? `${dayDifference} days ago` : `${dayDifference} days ago`;
     }
     // More than that
     else {
