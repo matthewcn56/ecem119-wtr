@@ -53,7 +53,7 @@ export default function BottleInfoCards(
                 ))
                 // Filter out unavailable names
                 .filter(
-                    (wbObj) => wbObj.key !== 'XXX_REMOVE'
+                    (wbObj) => wbObj && wbObj.key !== 'XXX_REMOVE'
                 );
 
             // Add the "Add new water bottle" button

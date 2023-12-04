@@ -39,7 +39,6 @@ export default function PairingStep(props: {
                 ownerID: uid 
             });
             setBottleFound(true);
-            props.onSuccess();
         }
 
         // Minimum load of 2 secs
@@ -55,8 +54,12 @@ export default function PairingStep(props: {
     }, []);
 
     React.useEffect(() => {
-        if (bottleFound === false) {
+        if (bottleFound === null) {
+            return;
+        } else if (!bottleFound) {
             props.onError("Non-existent bottle");
+        } else {
+            props.onSuccess();
         }
     }, [minimumLoadTimePassed]);
 

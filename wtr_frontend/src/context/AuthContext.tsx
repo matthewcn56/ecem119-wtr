@@ -33,7 +33,8 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
                         email: user.email || "",
                         photoURL: user.photoURL || "",
                         displayName: user.displayName || "",
-                    });
+                        waterBottles: [],
+                    } as IUser);
                 } finally {
                     setLoading(false);
 

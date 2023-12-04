@@ -38,7 +38,7 @@ export async function addUserWaterBottles(uid: string, bottleId: string) {
     const userRef = ref(db, `users/${uid}`);
     getUser(uid).then((user) => {
         update(userRef, {
-            'waterBottles': [...(user.waterBottles ?? []), bottleId]
+            'waterBottles': [...(user.waterBottles ?? []), ...(user.waterBottles && user.waterBottles.includes(bottleId) ? [] : [bottleId])]
         });
     });
 }
