@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <FirebaseESP32.h>
 #include "secret.h"
+#include "time.h"
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
@@ -12,18 +13,38 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+// include library to read and write from flash memory
+#include <Preferences.h>
+
+// define the number of bytes you want to access
+#define PERSISTENT_CODE_SIZE 6
 
 #define LED 2
 
 //CONSTANTS FOR NUMBER GEN
-const char numericCharacters[] = "0123456789";
-const int numericCharactersLength = sizeof(numericCharacters) - 1;
 
 Adafruit_MPU6050 mpu;
+
+Preferences preferences;
+
+String pairingCode = "";
+
+uint64_t lastDrankTimestamp =0;
+
+
+//getting today's date
+
+const char* ntpServer = "pool.ntp.org";
+const long  gmtOffset_sec = -28800;
+const int   daylightOffset_sec = 3600;
+
+char* BOTTLE_ID_KEY = "bid";
+
 
 
 const int trigPin = 4;
 const int echoPin = 23;
+const float AVG_THRESHOLD = 0.5;
 
 //define sound speed in cm/uS
 #define SOUND_SPEED 0.034
@@ -39,7 +60,7 @@ int SEND_INTERVAL = 1000;
 int READ_INTERVAL = 250/2;
 unsigned long lastReadTime = 0;
 
-int CODE_LEN = 8;
+int CODE_LEN = 6;
 
 int BLINK_INTERVAL = 100;
 unsigned long lastBlinkTime=0;
@@ -55,11 +76,11 @@ bool attemptingPairing = false;
 
 
 float MAX_VOLUME = 1000;
-float MAX_CM = 20.0;
+float MAX_CM = 17.5;
 
 int PAST_READINGS_SIZE = 5;
 
-String BOTTLE_ID = "mattchoo_test";
+String BOTTLE_ID = "";
 
 bool shouldUpdate = false;
 int valuesRead = 0;
@@ -69,6 +90,7 @@ FirebaseData fbdo;
 
 FirebaseAuth auth;
 FirebaseConfig config;
+
 
 //helper function to add reading to list of values
 void addReading(float newVal) {
@@ -100,7 +122,49 @@ float calcAvgReading(){
 }
 
 float cmToPercentage(float cm){
-  return (cm/MAX_CM);
+  float initialCalc = 1-(cm/MAX_CM);
+  if(initialCalc>1){
+    return 1;
+  }
+  if(initialCalc<0){
+    return 0;
+  }
+  return initialCalc;
+}
+
+//helper fn print local time
+void printLocalTime(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return;
+  }
+  Serial.println(&timeinfo, "%A, %B %d %Y %H:%M:%S");
+  Serial.print("Day of week: ");
+  Serial.println(&timeinfo, "%A");
+  Serial.print("Month: ");
+  Serial.println(&timeinfo, "%B");
+  Serial.print("Day of Month: ");
+  Serial.println(&timeinfo, "%d");
+  Serial.print("Year: ");
+  Serial.println(&timeinfo, "%Y");
+  Serial.print("Hour: ");
+  Serial.println(&timeinfo, "%H");
+  Serial.print("Hour (12 hour format): ");
+  Serial.println(&timeinfo, "%I");
+  Serial.print("Minute: ");
+  Serial.println(&timeinfo, "%M");
+  Serial.print("Second: ");
+  Serial.println(&timeinfo, "%S");
+
+  Serial.println("Time variables");
+  char timeHour[3];
+  strftime(timeHour,3, "%H", &timeinfo);
+  Serial.println(timeHour);
+  char timeWeekDay[10];
+  strftime(timeWeekDay,10, "%A", &timeinfo);
+  Serial.println(timeWeekDay);
+  Serial.println();
 }
 
 
@@ -111,9 +175,16 @@ bool determineUpdate(){
   }
   float avgTotal = calcAvgReading();
   float readingDiff = avgTotal - lastSent;
+  //check if threshold reached
   if(readingDiff > CM_DIFF_THRESHOLD || readingDiff<-CM_DIFF_THRESHOLD){
     // Serial.print("Should update with: ");
     // Serial.println(avgTotal);
+    //only update if all values within stabilized threshold
+    for(int i=0;i<PAST_READINGS_SIZE;i++){
+      if (lastFiveReadingsCM[i] < (avgTotal -AVG_THRESHOLD) || lastFiveReadingsCM[i] > (avgTotal+ AVG_THRESHOLD) ) {
+        return false;
+      }
+    }
     return true;
   }
   else {
@@ -202,6 +273,22 @@ void setup() {
     break;
   }
 
+  // Open Preferences with my-app namespace. Each application module, library, etc
+  // has to use a namespace name to prevent key name collisions. We will open storage in
+  // RW-mode (second parameter has to be false).
+  // Note: Namespace name is limited to 15 chars.
+  preferences.begin("wtr", false);
+
+  BOTTLE_ID = preferences.getString(BOTTLE_ID_KEY, "");
+
+  Serial.print("Bottle ID in memory is: ");
+  Serial.println(BOTTLE_ID);
+
+
+
+
+
+
 
 
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
@@ -248,7 +335,11 @@ void setup() {
 
   //TODO: get last sent
 
+  configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
+  delay(5000);
+  printLocalTime();
 }
+
 
 //read distance with ultrasonic
 void readDistance(){
@@ -293,13 +384,13 @@ void readDistance(){
 }
 
 String generateRandomString(int length) {
+  String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
   String randomString = "";
   
   for (int i = 0; i < length; i++) {
-    int randomIndex = random(numericCharactersLength);
-    randomString += numericCharacters[randomIndex];
+    int randomIndex = random(characters.length());
+    randomString += characters.charAt(randomIndex);
   }
-
   return randomString;
 }
 
@@ -329,8 +420,10 @@ void initiatePair(){
     }
   }
 
-  Serial.print("Generated code: ");
+  Serial.print("Bottle paired with code: ");
   Serial.println(code);
+  BOTTLE_ID =code;
+  preferences.putString(BOTTLE_ID_KEY,BOTTLE_ID);
 
   FirebaseJson defaultWaterBottle;
 
@@ -346,11 +439,13 @@ void initiatePair(){
   defaultWaterBottle.add("name","");
 
 
-  bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+code, defaultWaterBottle);
+  bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+BOTTLE_ID, defaultWaterBottle);
   if(didSet){
     Serial.print("Made default water bottle with code: ");
     Serial.println(code);
     attemptingPairing = false;
+    lastSent = 0;
+    lastSentPercentage = 0;
   }
   else {
     Serial.println("Error initiating pairing");
@@ -386,32 +481,76 @@ void loop() {
   //only send updated value and timestamp if should update
   if (Firebase.ready() && !taskCompleted && shouldUpdate )
   {
-    taskCompleted = true;
-
-    Serial.printf("Set timestamp... %s\n", Firebase.setTimestamp(fbdo, "/waterBottles/" +BOTTLE_ID + "/lastDrankTime") ? "ok" : fbdo.errorReason().c_str());
-
-    if (fbdo.httpCode() == FIREBASE_ERROR_HTTP_CODE_OK)
-    {
-      // In setTimestampAsync, the following timestamp will be 0 because the response payload was ignored for all async functions.
-
-      // Timestamp saved in millisecond, get its seconds from int value
-      Serial.print("TIMESTAMP (Seconds): ");
-      Serial.println(fbdo.to<int>());
-
-
-      // Or print the total milliseconds from double value
-      // Due to bugs in Serial.print in Arduino library, use printf to print double instead.
-      printf("TIMESTAMP (milliSeconds): %lld\n", fbdo.to<uint64_t>());
+    //check if paired
+    if(BOTTLE_ID == ""){
+      Serial.println("Must pair bottle!");
     }
+    else {
+      taskCompleted = true;
 
-    float valToSend = calcAvgReading();
-    float valToSendPerc = cmToPercentage(valToSend);
+      Serial.printf("Set timestamp... %s\n", Firebase.setTimestamp(fbdo, "/waterBottles/" +BOTTLE_ID + "/lastDrankTime") ? "ok" : fbdo.errorReason().c_str());
 
-    Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
-    lastSent = valToSend;
-    Serial.print("Updating with val of: ");
-    Serial.println(valToSendPerc);
+      if (fbdo.httpCode() == FIREBASE_ERROR_HTTP_CODE_OK)
+      {
+        // In setTimestampAsync, the following timestamp will be 0 because the response payload was ignored for all async functions.
 
-    taskCompleted = false;
+        // Timestamp saved in millisecond, get its seconds from int value
+        Serial.print("TIMESTAMP (Seconds): ");
+        Serial.println(fbdo.to<int>());
+
+
+        // Or print the total milliseconds from double value
+        // Due to bugs in Serial.print in Arduino library, use printf to print double instead.
+        printf("TIMESTAMP (milliSeconds): %lld\n", fbdo.to<uint64_t>());
+      }
+
+      float valToSend = calcAvgReading();
+      float valToSendPerc = cmToPercentage(valToSend);
+
+      Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
+      lastSent = valToSend;
+      Serial.print("Updating with val of: ");
+      Serial.println(valToSendPerc);
+
+      struct tm timeinfo;
+      if(!getLocalTime(&timeinfo)){
+        Serial.println("Failed to obtain time");
+        return;
+      }
+      int todays_day = timeinfo.tm_mday;
+      int todays_year = timeinfo.tm_year + 1900;
+      int todays_month = timeinfo.tm_mon+1;
+      String todays_day_str = String(todays_day);
+      if(todays_day<10){
+        todays_day_str = "0" + todays_day_str;
+      }
+
+      String todays_month_str = String(todays_month);
+      if(todays_month<10){
+        todays_month_str = "0" + todays_month_str;
+      }
+
+      String date_timestamp = String(todays_year) + todays_month_str + todays_day_str;
+      //TODO: CODE
+      bool got_data = Firebase.getString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate");
+      if(!got_data){
+        Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+        Serial.print("Setting today's date to: ");
+        Serial.print(date_timestamp);
+      }
+      else {
+        String old_timestamp = fbdo.to<String>();
+        if(!old_timestamp.equals(date_timestamp)){
+          Serial.print("Updating today's date to: ");
+          Serial.print(date_timestamp);
+          Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+        }
+        else {
+          Serial.println("Date is the same");
+        }
+      }
+
+      taskCompleted = false;
+    }
   }
 }
