@@ -27,7 +27,7 @@ export default function FamilyInfoCards(props: { familyMembers: string[] }) {
         }
 
         init();
-    }, []);
+    }, [props.familyMembers]);
 
     if (cards == undefined) {
         return (<>

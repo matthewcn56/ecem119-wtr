@@ -25,7 +25,7 @@ export default function Family() {
             open={showCodeModal}
             title="My Friend Code"
             onCancel={() => setShowCodeModal(false)}
-            footer={[<Button type="primary" onClick={() => setShowCodeModal(false)}>OK</Button>]}
+            footer={[<Button key="Cancel" type="primary" onClick={() => setShowCodeModal(false)}>OK</Button>]}
         >
             <Flex style={{ width: '100%', height: '100%', padding: '25px' }} justify="center" align="center" gap="middle" vertical>
                 {
@@ -41,7 +41,7 @@ export default function Family() {
             open={showAddFriendModal}
             title="Add A Family Member"
             onCancel={() => setShowAddFriendModal(false)}
-            footer={[<Button onClick={() => setShowAddFriendModal(false)}>Cancel</Button>]}
+            footer={[<Button key="Cancel" onClick={() => setShowAddFriendModal(false)}>Cancel</Button>]}
             styles={{ body: { height: '400px' }}}
         >
             <Flex style={{ width: '100%', height: '100%', padding: '25px' }} justify="center" align="center" gap="middle" vertical>
