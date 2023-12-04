@@ -13,6 +13,7 @@
     "@ant-design/plots": "^1.2.5",
     "@emotion/react": "^11.11.1",
     "@emotion/styled": "^11.11.0",
+    "@yudiel/react-qr-scanner": "^1.2.4",
     "antd": "^5.11.2",
     "firebase": "^10.6.0",
     "next": "14.0.3",

@@ -39,7 +39,10 @@ export function AuthContextProvider({ children }: { children: React.ReactNode })
                     setLoading(false);
 
                     // Attach handler to user
-                    attachUserHandler(user.uid, (dbUser) => setUser(dbUser));
+                    attachUserHandler(user.uid, (dbUser) => {
+                        console.log("User changed!");
+                        setUser(dbUser);
+                    });
                 }
             }
           });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Avatar, Badge, Card, Flex, Typography } from 'antd';
 import { CalendarOutlined } from '@ant-design/icons';
+import lastSipTimeHumanReadable from '@/utils/lastSipTimeHumanReadable';
 
 export default function LastSipCard(props: { lastSipTime?: number, loading: boolean }): JSX.Element {
     const { lastSipTime, loading } = props;
@@ -12,35 +13,7 @@ export default function LastSipCard(props: { lastSipTime?: number, loading: bool
     if (!lastSipTime) {
         timeString = "Data not available";
     } else {
-        const lastSip = new Date(lastSipTime).getTime();
-        const now = new Date().getTime();
-        const timeDifference = (now - lastSip) / 1000 / 60; // Time since last sip in minutes
-
-        // Less than a minute
-        if (timeDifference < 1) {
-            timeString = "<1 minute ago";
-            badgeColor = "green"
-        }
-        // Less than an hour
-        else if (timeDifference < 60) {
-            const minuteDifference = Math.round(timeDifference);
-            timeString = minuteDifference == 1 ? "1 minute ago" : `${minuteDifference} minutes ago`;
-            badgeColor = "yellow"
-        }
-        // Less than a day
-        else if (timeDifference < 60 * 24) {
-            const hourDifference = Math.round(timeDifference / 60);
-            timeString = hourDifference == 1 ? "1 minute ago" : `${hourDifference} hours ago`;
-        }
-        // Less than a week
-        else if (timeDifference < 60 * 24 * 7) {
-            const dayDifference = Math.round(timeDifference / 60 / 24);
-            timeString = dayDifference == 1 ? "1 minute ago" : `${dayDifference} days ago`;
-        }
-        // More than that
-        else {
-            timeString = `on ${new Date(lastSipTime).toLocaleDateString('en-ZA')}`
-        }
+        [timeString, badgeColor] = lastSipTimeHumanReadable(lastSipTime);
     }
 
     return (            
