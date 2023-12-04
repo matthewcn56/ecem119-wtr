@@ -42,7 +42,9 @@ export default function lastSipTimeHumanReadable(lastSipTime: number, short: boo
     }
     // More than that
     else {
-        timeString = `on ${new Date(lastSipTime).toLocaleDateString('en-ZA')}`
+        if (!short)
+            timeString = 'on ';
+        timeString += `${new Date(lastSipTime).toLocaleDateString('en-ZA')}`
     }
 
     return [timeString, badgeColor];

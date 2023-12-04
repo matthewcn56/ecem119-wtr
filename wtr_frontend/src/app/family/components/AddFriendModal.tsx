@@ -45,7 +45,7 @@ export default function AddFriendModal(props: { user: IUser, closeModal: () => v
     return (
         <Flex style={{ width: '100%', height: '100%' }} justify="center" align="center" gap="middle" vertical>
             <Steps 
-                style={{ height: '80px', width: '70%' }} 
+                style={{ height: '80px', width: 'max(70%, 200px)' }} 
                 status={errorOccurred ? 'error' : undefined}
                 current={currentStep} 
                 items={steps.map((s) => ({ key: s.title, title: s.title, icon: s.icon }))} 
