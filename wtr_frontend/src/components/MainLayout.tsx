@@ -17,7 +17,7 @@ export default function MainLayout({ children }: { children: React.ReactNode }):
         <Layout style={{ minHeight: '100vh' }}>
             <Layout.Header className={styles.header}>
                 <Image
-                    src="next.svg"
+                    src="wtr-horizontal.svg"
                     width="100"
                     height="50"
                     alt="wtr logo"
