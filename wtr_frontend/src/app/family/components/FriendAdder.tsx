@@ -64,7 +64,6 @@ export default function FriendAdder(props: {
         router.push('/family');
         props.reset();
         props.closeModal();
-        window.location.reload();
     }
 
     if (!minimumLoadTimePassed || friendFound == null) {
