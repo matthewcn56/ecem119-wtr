@@ -34,6 +34,10 @@ String pairingCode = "";
 
 uint64_t lastDrankTimestamp =0;
 
+unsigned long lastDrankLocalTimestamp = 0;
+
+unsigned long LCD_UPDATE_INTERVAL = 1000;
+
 
 //getting today's date
 
@@ -47,7 +51,9 @@ char* BOTTLE_ID_KEY = "bid";
 
 const int trigPin = 4;
 const int echoPin = 23;
-const float AVG_THRESHOLD = 0.5;
+const float AVG_THRESHOLD = 1;
+
+unsigned long lastLCDTime = 0;
 
 //define sound speed in cm/uS
 #define SOUND_SPEED 0.034
@@ -469,6 +475,10 @@ void loop() {
     lastReadTime = millis();
   }
 
+  if (millis() - lastLCDTime > LCD_UPDATE_INTERVAL){ 
+    display.printBottleData(MAX_VOLUME, cmToPercentage(lastSent), millis()-lastDrankLocalTimestamp);
+  }
+
   bool shouldUpdate = determineUpdate();
 
   buttonState = digitalRead(buttonPin);
@@ -512,6 +522,8 @@ void loop() {
 
       Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
       lastSent = valToSend;
+      lastDrankLocalTimestamp = millis();
+
       Serial.print("Updating with val of: ");
       Serial.println(valToSendPerc);
 

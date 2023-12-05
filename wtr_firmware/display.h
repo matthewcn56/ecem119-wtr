@@ -17,3 +17,5 @@ public:
 private:
   LiquidCrystal lcd;
 };
+
+#endif

@@ -66,7 +66,7 @@ void Display::printCode(const String &code)
 {
   lcd.clear();
   lcd.print(code);
-  delay(500);
+  // delay(500);
 }
 
 void Display::printBottleData(const int &maxVol, const float &percent, const float &tsls)
@@ -76,5 +76,5 @@ void Display::printBottleData(const int &maxVol, const float &percent, const flo
   lcd.print(this->getBottleVolume(maxVol, percent));
   lcd.setCursor(0, 1);
   lcd.print(this->getLastSipTime(tsls));
-  delay(500);
+  // delay(500);
 }
