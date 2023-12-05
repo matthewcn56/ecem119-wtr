@@ -3,6 +3,7 @@
 #include <FirebaseESP32.h>
 #include "secret.h"
 #include "time.h"
+#include "display.h"
 
 // Provide the token generation process info.
 #include <addons/TokenHelper.h>
@@ -22,6 +23,8 @@
 #define LED 2
 
 //CONSTANTS FOR NUMBER GEN
+
+Display display(25,12,14,26,27,13);
 
 Adafruit_MPU6050 mpu;
 
@@ -540,6 +543,7 @@ void loop() {
       }
       else {
         String old_timestamp = fbdo.to<String>();
+        //TODO: WATER DRANK TODAY STATS
         if(!old_timestamp.equals(date_timestamp)){
           Serial.print("Updating today's date to: ");
           Serial.print(date_timestamp);
