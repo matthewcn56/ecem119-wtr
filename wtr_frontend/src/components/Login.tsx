@@ -27,7 +27,7 @@ export default function Login(): JSX.Element {
                                 ? (
                                     <Spin size="large" />
                                 ) : (<>
-                                    <Image src="vercel.svg" width="150" height="150" alt="wtr logo" />
+                                    <Image src="wtr-circle.svg" width="150" height="150" alt="wtr logo" />
                                     <Button onClick={_handleSignIn}>
                                         Sign in with Google
                                     </Button>

@@ -69,6 +69,22 @@ export async function getWaterBottleConsumption(bottleID: string): Promise<ICons
     });
 }
 
+export async function getWaterBottleLastSip(bottleID: string): Promise<number> {
+    const bottleRef = ref(db, `waterBottles/${bottleID}`);
+
+    return new Promise((resolve, reject) => {
+        get(bottleRef).then((snapshot) => {
+            if (snapshot.exists()) {
+                resolve((snapshot.val() as IBottleData).lastDrankTime); 
+            } else {
+                reject("Water bottle does not exist");
+            }
+        }).catch((e) => {
+            reject("Error occurred: " + e);
+        });
+    });
+}
+
 export async function updateBottleData(bottleID: string, newBottleData: Partial<IBottleData>): Promise<void> {
     const bottleRef = ref(db, `waterBottles/${bottleID}`);
     

@@ -17,6 +17,19 @@ export async function getUser(uid: string) {
     });
 }
 
+export async function checkUserExists(uid: string): Promise<void> {
+    const userRef = ref(db, `users/${uid}`);
+
+    return new Promise((resolve, reject) => {
+        get(userRef).then((snapshot) => {
+            if (snapshot.exists())
+                resolve();
+            else
+                reject();
+        });
+    });
+}
+
 export function addUser(user: Partial<IUser>) {
     set(
         ref(db, `users/${user.uid}`),
@@ -34,11 +47,37 @@ export function attachUserHandler(uid: string, callback: (arg0: IUser) => any) {
     });
 }
 
-export async function addUserWaterBottles(uid: string, bottleId: string) {
+export async function addUserWaterBottles(uid: string, bottleId: string): Promise<void> {
     const userRef = ref(db, `users/${uid}`);
-    getUser(uid).then((user) => {
+    return getUser(uid).then((user) => {
         update(userRef, {
             'waterBottles': [...(user.waterBottles ?? []), ...(user.waterBottles && user.waterBottles.includes(bottleId) ? [] : [bottleId])]
         });
+    });
+}
+
+export async function addUserFriend(uid: string, friendUid: string): Promise<void> {
+    const userRef1 = ref(db, `users/${uid}`);
+    const userRef2 = ref(db, `users/${friendUid}`);
+
+    return new Promise(async (resolve, reject) => {
+        if (uid == friendUid) {
+            reject();
+            return;
+        }
+
+        await Promise.all([
+            getUser(uid).then((user) => {
+                update(userRef1, {
+                    'familyMembers': [...(user.familyMembers ?? []), ...(user.familyMembers && user.familyMembers.includes(friendUid) ? [] : [friendUid])]
+                });
+            }),
+            getUser(friendUid).then((user) => {
+                update(userRef2, {
+                    'familyMembers': [...(user.familyMembers ?? []), ...(user.familyMembers && user.familyMembers.includes(uid) ? [] : [uid])]
+                });
+            }),
+        ]);
+        resolve();
     });
 }
