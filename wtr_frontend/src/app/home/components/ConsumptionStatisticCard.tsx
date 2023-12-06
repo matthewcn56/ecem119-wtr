@@ -50,7 +50,7 @@ export default function ConsumptionStatisticCard(props: { userWaterBottles: stri
                             <Divider type="vertical" style={{ height: '60px' }} />
                             <div style={{ textAlign: 'center' }}>
                                 <Typography.Title level={3} style={{ margin: 0 }}>
-                                    {waterConsumed[0]} mL
+                                    {Math.round(waterConsumed[0])} mL
                                 </Typography.Title>
                                 <Typography>
                                     today

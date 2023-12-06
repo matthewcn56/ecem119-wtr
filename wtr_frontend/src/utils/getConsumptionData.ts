@@ -11,14 +11,15 @@ export default async function getConsumptionData(waterBottles: string[]): Promis
     // [total water consumed today, total water consumed yesterday]
     const waterConsumed = (await Promise.all(
         waterBottles.map(async (wb) => {
-            return getWaterBottleConsumption(wb).then((consumption): [number, number] => {
-                if (!consumption)
-                    return [0, 0];
-                else if (consumption.todaysDate != todayDate)
-                    return [0, 0];
-                else
-                    return [consumption.waterConsumedToday, consumption.waterConsumedYesterday];
-            });
+            return getWaterBottleConsumption(wb)
+                .then((consumption): [number, number] => {
+                    if (!consumption)
+                        return [0, 0];
+                    else if (consumption.todaysDate != todayDate)
+                        return [0, 0];
+                    else
+                        return [consumption.waterConsumedToday, consumption.waterConsumedYesterday];
+                }).catch((e): [number, number] => [0, 0]);
         })
     )).reduce(
         (accum: [number, number], v: [number, number]) => [accum[0] + v[0], accum[1] + v[1]],
