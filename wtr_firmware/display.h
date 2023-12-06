@@ -11,7 +11,7 @@ public:
   String getBottleVolume(const int &maxVol, const float &percent);
   String getLastSipTime(const float &tsls);
 
-  void printCode(const String &code);
+  void printCode(const String &code, const float &timeLeftToPair);
   void printBottleData(const int &maxVol, const float &percent, const float &tsls);
 
 private:

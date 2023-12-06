@@ -38,6 +38,15 @@ unsigned long lastDrankLocalTimestamp = 0;
 
 unsigned long LCD_UPDATE_INTERVAL = 1000;
 
+unsigned long PAIRING_WAIT_TIME = 30000;
+
+unsigned long lastAttemptPair = 0;
+
+bool attemptedPair = false;
+
+float waterConsumedToday =0;
+
+
 
 //getting today's date
 
@@ -130,6 +139,10 @@ float calcAvgReading(){
   return runningTotal/PAST_READINGS_SIZE;
 }
 
+float percToML(float perc){
+  return perc * MAX_VOLUME;
+}
+
 float cmToPercentage(float cm){
   float initialCalc = 1-(cm/MAX_CM);
   if(initialCalc>1){
@@ -138,6 +151,11 @@ float cmToPercentage(float cm){
   if(initialCalc<0){
     return 0;
   }
+  return initialCalc;
+}
+
+float percToCM(float perc){
+  float initialCalc = (1-perc) * MAX_CM;
   return initialCalc;
 }
 
@@ -347,6 +365,43 @@ void setup() {
   configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
   delay(5000);
   printLocalTime();
+
+  //must read in waterConsumedToday, lastDrankTimestamp and lastSentPercentage, converting to lastSent
+  if(BOTTLE_ID){
+    bool got_json = Firebase.getJSON(fbdo, "waterBottles/"+BOTTLE_ID);
+    //TODO: getjson data instead
+    if(got_json){
+      FirebaseJson jVal;
+      jVal = fbdo.jsonObject();
+      FirebaseJsonData result;
+      jVal.get(result, "currentWaterVolume");
+      if(result.success){
+          lastSentPercentage = result.to<float>();
+          Serial.print("Perc in DB is: ");
+          Serial.println(lastSentPercentage);
+
+          lastSent = percToCM(lastSentPercentage);
+        }
+      jVal.get(result,"lastDrankTime");
+      if(result.success){
+        lastDrankTimestamp = result.to<uint64_t>();
+        Serial.print("Last drank time in DB is: ");
+        Serial.println(lastDrankLocalTimestamp);
+
+      }
+
+      jVal.get(result,"waterConsumedToday");
+      if(result.success){
+        waterConsumedToday = result.to<float>();
+        Serial.print("Water consumed today in DB is: ");
+        Serial.println(waterConsumedToday);
+      }
+
+    }
+    else {
+      Serial.println("ERROR READING INITIAL BOTTLE DATA");
+    }
+  }
 }
 
 
@@ -393,7 +448,7 @@ void readDistance(){
 }
 
 String generateRandomString(int length) {
-  String characters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  String characters = "abcdefghijklmnopqrstuvwxyz0123456789";
   String randomString = "";
   
   for (int i = 0; i < length; i++) {
@@ -427,7 +482,7 @@ void initiatePair(){
     else {
       exists= false;
     }
-  }
+  } 
 
   Serial.print("Bottle paired with code: ");
   Serial.println(code);
@@ -443,18 +498,28 @@ void initiatePair(){
   //   name: ""
   // }
   defaultWaterBottle.add("currentWaterVolume",0);
-  defaultWaterBottle.add("lastDrinkTime",0);
+  defaultWaterBottle.add("lastDrankTime",0);
   defaultWaterBottle.add("maxVolume",1000);
   defaultWaterBottle.add("name","");
+  defaultWaterBottle.add("waterConsumedToday",0);
+  defaultWaterBottle.add("waterConsumedYesterday",0.1);
+  String date_timestamp = getTodaysTimestamp();
+  defaultWaterBottle.add("todaysDate",date_timestamp);
+
 
 
   bool didSet = Firebase.setJSON(fbdo, "/waterBottles/"+BOTTLE_ID, defaultWaterBottle);
   if(didSet){
     Serial.print("Made default water bottle with code: ");
     Serial.println(code);
+    lastAttemptPair = millis();
     attemptingPairing = false;
+    attemptedPair = true;
     lastSent = 0;
     lastSentPercentage = 0;
+    lastDrankTimestamp=0;
+    lastDrankLocalTimestamp=0;
+    waterConsumedToday = 0;
   }
   else {
     Serial.println("Error initiating pairing");
@@ -464,6 +529,29 @@ void initiatePair(){
 
 }
 
+
+String getTodaysTimestamp(){
+  struct tm timeinfo;
+  if(!getLocalTime(&timeinfo)){
+    Serial.println("Failed to obtain time");
+    return "";
+  }
+  int todays_day = timeinfo.tm_mday;
+  int todays_year = timeinfo.tm_year + 1900;
+  int todays_month = timeinfo.tm_mon+1;
+  String todays_day_str = String(todays_day);
+  if(todays_day<10){
+    todays_day_str = "0" + todays_day_str;
+  }
+
+  String todays_month_str = String(todays_month);
+  if(todays_month<10){
+    todays_month_str = "0" + todays_month_str;
+  }
+
+  String date_timestamp = String(todays_year) + todays_month_str + todays_day_str;
+  return date_timestamp;
+}
 
 
 
@@ -476,7 +564,13 @@ void loop() {
   }
 
   if (millis() - lastLCDTime > LCD_UPDATE_INTERVAL){ 
-    display.printBottleData(MAX_VOLUME, cmToPercentage(lastSent), millis()-lastDrankLocalTimestamp);
+    if(attemptedPair && millis() - lastAttemptPair < PAIRING_WAIT_TIME) {
+      display.printCode(BOTTLE_ID, PAIRING_WAIT_TIME - (millis() - lastAttemptPair));
+    }
+    else {
+      display.printBottleData(MAX_VOLUME, cmToPercentage(lastSent), millis()-lastDrankLocalTimestamp);
+    }
+    lastLCDTime = millis();
   }
 
   bool shouldUpdate = determineUpdate();
@@ -510,8 +604,6 @@ void loop() {
         // Timestamp saved in millisecond, get its seconds from int value
         Serial.print("TIMESTAMP (Seconds): ");
         Serial.println(fbdo.to<int>());
-
-
         // Or print the total milliseconds from double value
         // Due to bugs in Serial.print in Arduino library, use printf to print double instead.
         printf("TIMESTAMP (milliSeconds): %lld\n", fbdo.to<uint64_t>());
@@ -519,52 +611,100 @@ void loop() {
 
       float valToSend = calcAvgReading();
       float valToSendPerc = cmToPercentage(valToSend);
+      float new_ml = percToML(valToSendPerc);
 
-      Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
-      lastSent = valToSend;
-      lastDrankLocalTimestamp = millis();
+      String date_timestamp = getTodaysTimestamp();
+      FirebaseJson jVal;
+      bool got_json = Firebase.getJSON(fbdo, "waterBottles/"+BOTTLE_ID);
+      //TODO: getjson data instead
+      if(got_json){
+        jVal = fbdo.jsonObject();
+        FirebaseJsonData result;
+        float old_perc =0;
+        jVal.get(result, "currentWaterVolume");
+        if(result.success){
+          old_perc = result.to<float>();
+        }
+        // float prevWaterConsumedToday =0;
+        // jVal.get(result, "waterConsumedToday");
+        // if(result.success){
+        //   prevWaterConsumedToday = result.to<float>();
+        // }
+        float old_ml = percToML(old_perc);
+        float ml_drank = old_ml - new_ml;
+        if(ml_drank<0){
+          ml_drank = 0;
+        }
 
-      Serial.print("Updating with val of: ");
-      Serial.println(valToSendPerc);
+        jVal.get(result, "todaysDate");
+        //if found todays date
+        if(result.success){
+          //TODO: FINISH WATER CONSUMED STATS
+          String old_timestamp = result.to<String>();
+          //update date timestamp if necessary and water consumed yesterday and water consumed today
+          if(!old_timestamp.equals(date_timestamp)){
+            Serial.print("Updating today's date to: ");
+            Serial.print(date_timestamp);
+            jVal.set("todaysDate", date_timestamp);
+            jVal.set("waterConsumedYesterday", waterConsumedToday);
+            waterConsumedToday = ml_drank;
+          }
+          //otherwise it's the same date
+          else {
+            waterConsumedToday+=ml_drank;
+          }
+          jVal.set("currentWaterVolume",valToSendPerc);
+          jVal.set("waterConsumedToday", waterConsumedToday);
+          Firebase.setJSON(fbdo, "waterBottles/"+BOTTLE_ID, jVal);
 
-      struct tm timeinfo;
-      if(!getLocalTime(&timeinfo)){
-        Serial.println("Failed to obtain time");
-        return;
-      }
-      int todays_day = timeinfo.tm_mday;
-      int todays_year = timeinfo.tm_year + 1900;
-      int todays_month = timeinfo.tm_mon+1;
-      String todays_day_str = String(todays_day);
-      if(todays_day<10){
-        todays_day_str = "0" + todays_day_str;
-      }
-
-      String todays_month_str = String(todays_month);
-      if(todays_month<10){
-        todays_month_str = "0" + todays_month_str;
-      }
-
-      String date_timestamp = String(todays_year) + todays_month_str + todays_day_str;
-      //TODO: CODE
-      bool got_data = Firebase.getString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate");
-      if(!got_data){
-        Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
-        Serial.print("Setting today's date to: ");
-        Serial.print(date_timestamp);
-      }
-      else {
-        String old_timestamp = fbdo.to<String>();
-        //TODO: WATER DRANK TODAY STATS
-        if(!old_timestamp.equals(date_timestamp)){
-          Serial.print("Updating today's date to: ");
-          Serial.print(date_timestamp);
-          Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+          lastSent = valToSend;
+          lastSentPercentage = valToSendPerc;
         }
         else {
-          Serial.println("Date is the same");
+          Serial.println("ERROR GETTING TODAYS DATE");
         }
       }
+      else {
+        Serial.println("ERROR GETTING WATER BOTTLE JSON DATA");
+      }
+      
+
+
+
+
+
+
+
+
+
+      
+
+      // Firebase.setFloat(fbdo, "/waterBottles/" +BOTTLE_ID +"/currentWaterVolume", valToSendPerc);
+      // lastSent = valToSend;
+      // last
+      // lastDrankLocalTimestamp = millis();
+
+      // Serial.print("Updating with val of: ");
+      // Serial.println(valToSendPerc);
+
+      // bool got_data = Firebase.getString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate");
+      // if(!got_data){
+      //   Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+      //   Serial.print("Setting today's date to: ");
+      //   Serial.print(date_timestamp);
+      // }
+      // else {
+      //   String old_timestamp = fbdo.to<String>();
+      //   //TODO: WATER DRANK TODAY STATS
+      //   if(!old_timestamp.equals(date_timestamp)){
+      //     Serial.print("Updating today's date to: ");
+      //     Serial.print(date_timestamp);
+      //     Firebase.setString(fbdo,"waterBottles/"+BOTTLE_ID+"/todaysDate", date_timestamp);
+      //   }
+      //   else {
+      //     Serial.println("Date is the same");
+      //   }
+      // }
 
       taskCompleted = false;
     }

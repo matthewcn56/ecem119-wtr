@@ -4,13 +4,16 @@
 #include <Arduino.h>
 #include <LiquidCrystal.h>
 
-class Display {
+class Display
+{
 public:
   Display(int rs, int enable, int d4, int d5, int d6, int d7);
-  void printData(const String& data);
+  String getBottleVolume(const int &maxVol, const float &percent);
+  String getLastSipTime(const float &tsls);
+
+  void printCode(const String &code);
+  void printBottleData(const int &maxVol, const float &percent, const float &tsls);
 
 private:
   LiquidCrystal lcd;
 };
-
-#endif

@@ -62,10 +62,16 @@ String Display::getLastSipTime(const float &tsls)
   return time_str;
 }
 
-void Display::printCode(const String &code)
+void Display::printCode(const String &code, const float &timeLeftToPair)
 {
   lcd.clear();
-  lcd.print(code);
+  String pairingLine = "Code: " + code;
+  String timeLeftLine = "Time Left: " + String(int(timeLeftToPair) / 1000) + "sec";
+
+  lcd.setCursor(0, 0);
+  lcd.print(pairingLine);
+  lcd.setCursor(0, 1);
+  lcd.print(timeLeftLine);
   // delay(500);
 }
 
