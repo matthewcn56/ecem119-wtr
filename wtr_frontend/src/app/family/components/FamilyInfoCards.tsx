@@ -86,7 +86,7 @@ function FamilyInfoCard(props: { user: IUser }) {
                     <Flex style={{ width: '100%', height: 'calc(100% - 48px - 80px)' }} justify="center" align="center" gap="middle">
                         <Flex style={{ width: '40%', height: '100%' }} justify="center" align="flex-start" gap="middle" vertical>
                             <Typography.Text style={{ margin: 0 }}>Water Today</Typography.Text>
-                            <Typography.Title level={3} style={{ margin: 0 }}>{waterConsumedToday} mL</Typography.Title>
+                            <Typography.Title level={3} style={{ margin: 0 }}>{Math.round(waterConsumedToday)} mL</Typography.Title>
                         </Flex>
                         <Flex style={{ width: '60%', height: '100%' }} justify="center" align="flex-start" gap="middle" vertical>
                             <Typography.Text style={{ margin: 0 }}>Last Sip</Typography.Text>
